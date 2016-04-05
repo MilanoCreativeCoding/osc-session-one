@@ -1,0 +1,53 @@
+/////////////		MILANO LIVE CODING
+/////////////		Session 5 apr 2016  
+
+/////////////		Author:	Filippo Guida
+/////////////		License:	Artistic License 2.0
+
+//	DESCRIPTION:	Audio Analysis and OSC Network Communication
+
+
+//	Set-Up Lib: 		http://doc.sccode.org/Overviews/JITLib.html
+s		=		Server.default;				//SC server
+p 		= 		ProxySpace.push(s);			//JIT Library
+e 		= 		();					//Environment
+
+// Audio Generation and Analysis
+e[\analBus] 	= 		Bus.control(s, 1);			//Control Bus To Send Audio Datas
+~audioModule 	= 
+{
+	var signal		=	 SinOsc.ar(2);
+	Out.ar(0, out);
+	
+	var fft		 	=	 FFT(LocalBuf(2048), out); 	//Fast Fourier Transform
+	var loudness		=	 Loudness.kr(fft);         	//Amplitude Value in Sons
+	Out.kr(e[\bus1], loudness);		
+	
+}.play;
+
+// Network: UDP Communication Set-up
+e[\oscArray] = Array.fill(10,						// Send to each host directly to reduce transmission latency
+{	
+	arg i; 
+	NetAddr.new("192.168.2."++i, 32000); 						//SET-UP NETWORK ADD HERE
+});
+
+// Network: OSC Communication Set-up
+e[\loopOsc]=
+Routine
+{
+	loop{
+		e[\bus1].get(
+		{
+				 arg value; 
+				 for(1, 10, 
+				 {
+					 arg i; 
+					 var temp = e[\oscArray][i-1];
+					 temp.sendMsg("/AudioDataFilippo", value)  	//SET-UP OSC PATH HERE
+				 });
+		});
+		
+		(1/30).wait;
+	}
+}.play;
