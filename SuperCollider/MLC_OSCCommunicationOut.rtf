@@ -1,0 +1,68 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf340
+\cocoascreenfonts1{\fonttbl\f0\fnil\fcharset0 Monaco;}
+{\colortbl;\red255\green255\blue255;\red191\green0\blue0;\red0\green0\blue0;\red0\green0\blue191;
+\red0\green115\blue0;\red255\green102\blue0;\red0\green0\blue255;\red96\green96\blue96;\red191\green0\blue0;
+}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f0\fs32 \cf2 /////////////		MILANO LIVE CODING\cf3 \
+\cf2 /////////////		Session 5 apr 2016  \cf3 \
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf2 /////////////		Author:	Filippo Guida\cf3 \
+\cf2 /////////////		License:	Artistic License 2.0\cf3 \
+\
+\cf2 //	DESCRIPTION:	Audio Analysis and OSC Network Communication\cf3 \
+\
+\
+\cf2 //	Set-Up Lib: 	http://doc.sccode.org/Overviews/JITLib.html\cf3 \
+s		=		\cf4 Server\cf3 .default;			\cf2 //SC server\cf3 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf3 p 		= 		\cf4 ProxySpace\cf3 .push(s);		\cf2 //JIT Library\cf3 \
+e 		= 		();							\cf2 //Environment\cf3 \
+\
+\cf2 // Audio Generation and Analysis\cf3 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf3 e[\cf5 \\analBus\cf3 ] 	= \cf4 Bus\cf3 .control(s, 1);\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf6 ~audioModule\cf3  	= \
+\{\
+	\cf7 var\cf3  signal			=	 \cf4 SinOsc\cf3 .ar(2);\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf3 	\cf4 Out\cf3 .ar(0, out);\
+	\
+	\cf7 var\cf3  fft		 		=	 \cf4 FFT\cf3 (\cf4 LocalBuf\cf3 (2048), out); \cf2 //Fast Fourier Transform\cf3 \
+	\cf7 var\cf3  loudness		=	 \cf4 Loudness\cf3 .kr(fft);         \cf2 //Amplitude Value in Sons\cf3 \
+	\cf4 Out\cf3 .kr(e[\cf5 \\bus1\cf3 ], loudness);		\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf3 	\
+\}.play;\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf3 \
+\cf2 // Network: UDP Communication Set-up\cf3 \
+e[\cf5 \\oscArray\cf3 ] = \cf4 Array\cf3 .fill(10,		\cf2 // Send to each host directly to reduce transmission latency\cf3 \
+\{	\
+	\cf7 arg\cf3  i; \
+	\cf4 NetAddr\cf3 .new(\cf8 "192.168.2."\cf3 ++i, 32000); \cf2 //SET-UP NETWORK ADD HERE\cf3 \
+\});\
+\
+\cf2 // Network: OSC Communication Set-up\cf3 \
+e[\cf5 \\loopOsc\cf3 ]=\
+\cf4 Routine\cf3 \
+\{\
+	loop\{\
+		e[\cf5 \\bus1\cf3 ].get(\
+		\{\
+				 \cf7 arg\cf3  value; \
+				 for(1, 10, \
+				 \{\
+					 \cf7 arg\cf3  i; \
+					 \cf7 var\cf3  temp = e[\cf5 \\oscArray\cf3 ][i-1];\
+					 temp.sendMsg(\cf8 "/AudioDataFilippo"\cf3 , value) \cf0  \cf9 //SET-UP OSC PATH HERE\cf3 \
+				 \});\
+		\});\
+		\
+		(1/30).wait;\
+	\}\
+\}.play;\
+}
